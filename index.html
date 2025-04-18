@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Chocolate Sales Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      .chart-container {
+        width: 48%; /* Increased width for the top two charts */
+        display: inline-block;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+
+      #topProductsChart, #productDistributionChart {
+        height: 400px; /* Adjusted height for better visibility */
+      }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            background-color: #000000;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 3em;
+            color: #ffffff;
+        }
+        h2 {
+            color: #ffffff;
+            font-size: 2em;
+        }
+        p {
+            color: #ffffff;
+            font-size: 1.5em;
+        }
+        ul{
+  
+            color: #ffffff;
+            font-size: 1em;
+        }
+        li {
+            color: #ffffff;
+            font-size: 1em;
+        }
+        code {
+            background-color: #333333;
+            color: #ffffff;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        </style>>
+  </head>
+  <body>
+    <h1>Chocolate Sales Analysis</h1>
+    <h2>Ashanti Benons</h2>
+    <p>
+        This dashboard visualizes chocolate sales data from various countries and products. The data is sourced from a CSV file named <code>chocolate_sales.csv</code>. The charts include:
+         <ul>
+            <li><strong>Top 10 Products by Sales:</strong> A horizontal bar chart showing the top 10 products based on total sales.</li>
+            <li><strong>Sales Distribution by Product:</strong> A doughnut chart illustrating the percentage distribution of sales across all products.</li>
+            <li><strong>Monthly Sales Trend 2022:</strong> A line chart displaying the sales trend over the months of 2022.</li>
+            <li><strong>Sales by Country:</strong> A vertical bar chart comparing total sales across different countries.</li>
+        </ul>
+        
+    </p>
+    <!-- Chart Container Grid -->
+    <div class="chart-container">
+      <canvas id="topProductsChart"></canvas>
+    </div>
+    <div class="chart-container">
+      <canvas id="productDistributionChart"></canvas>
+    </div>
+    <div class="chart-container">
+      <canvas id="monthlyTrendChart"></canvas>
+    </div>
+    <div class="chart-container">
+      <canvas id="countrySalesChart"></canvas>
+    </div>
+
+    <script>
+      // Main data loading function
+      async function loadData() {
+        try {
+          const response = await fetch("chocolate_sales.csv");
+          const csvData = await response.text();
+          processData(csvData);
+        } catch (error) {
+          console.error("Error loading CSV:", error);
+          alert(
+            "Error loading data file. Make sure chocolate_sales.csv is in the same folder."
+          );
+        }
+      }
+
+      // Process CSV data and create charts
+
+                
+      function processData(csvData) {
+        const rows = csvData.split("\n").slice(1);
+       
+        const salesData = rows
+          .map((row) => {
+            const [salesPerson, country, product, date, amount, boxes] =
+              row.split(",");
+            return {
+              product: product?.trim(),
+              country: country?.trim(),
+              date: new Date(date?.trim()),
+              amount: parseFloat(amount?.replace(/[^0-9.]/g, "") || 0),
+              boxes: parseInt(boxes?.trim()) || 0,
+            };
+          })
+          .filter((item) => item.product); // Remove empty rows
+
+        // Data Aggregation
+        const aggregator = {
+          products: salesData.reduce((acc, curr) => {
+            acc[curr.product] = (acc[curr.product] || 0) + curr.amount;
+            return acc;
+          }, {}),
+
+          months: salesData.reduce((acc, curr) => {
+            const month = curr.date.toLocaleString("default", {
+              month: "short",
+            });
+            acc[month] = (acc[month] || 0) + curr.amount;
+            return acc;
+          }, {}),
+
+          countries: salesData.reduce((acc, curr) => {
+            acc[curr.country] = (acc[curr.country] || 0) + curr.amount;
+            return acc;
+          }, {}),
+        };
+
+        // Chart Data Preparation
+        const chartData = {
+          topProducts: {
+            labels: Object.keys(aggregator.products)
+              .sort((a, b) => aggregator.products[b] - aggregator.products[a])
+              .slice(0, 10),
+            data: Object.values(aggregator.products)
+              .sort((a, b) => b - a)
+              .slice(0, 10),
+          },
+
+          productDistribution: {
+            labels: Object.keys(aggregator.products),
+            data: Object.values(aggregator.products),
+          },
+
+          monthlyTrend: {
+            labels: Object.keys(aggregator.months),
+            data: Object.values(aggregator.months),
+          },
+
+          countrySales: {
+            labels: Object.keys(aggregator.countries),
+            data: Object.values(aggregator.countries),
+          },
+        };
+
+        // Create Charts
+        const chocolateColor = "#6B4226";
+
+        // 1. Horizontal Bar Chart - Top Products
+        new Chart(document.getElementById("topProductsChart"), {
+          type: "bar",
+          data: {
+            labels: chartData.topProducts.labels,
+            datasets: [
+              {
+                label: "Sales ($)",
+                data: chartData.topProducts.data,
+                backgroundColor: Array.from(
+                  { length: chartData.productDistribution.labels.length },
+                  () => `hsl(${Math.random() * 360}, 70%, 60%)`
+                ),
+              },
+            ],
+          },
+          options: {
+            indexAxis: "y",
+            responsive: true,
+            plugins: {
+              title: { display: true, text: "Top 10 Products by Sales", font: { size: 24, weight: "bold" }, color: "#ffffff" },
+              legend: { labels: { color: "#ffffff" } },
+            },
+            scales: {
+              x: { title: { display: true, text: "Total Sales ($)", color: "#ffffff" }, ticks: { color: "#ffffff" } },
+              y: { title: { display: true, text: "Product", color: "#ffffff" }, ticks: { color: "#ffffff" } },
+            },
+          },
+        });
+
+        // 2. Doughnut Chart - Product Distribution
+        new Chart(document.getElementById("productDistributionChart"), {
+          type: "doughnut",
+          data: {
+            labels: chartData.productDistribution.labels,
+            datasets: [
+              {
+                label: "Sales Distribution",
+                data: chartData.productDistribution.data,
+                backgroundColor: Array.from(
+                  { length: chartData.productDistribution.labels.length },
+                  () => `hsl(${Math.random() * 360}, 70%, 60%)`
+                ),
+              },
+            ],
+          },
+          options: {
+            plugins: {
+              title: { display: true, text: "Sales Distribution by Product", font: { size: 24, weight: "bold" }, color: "#ffffff" },
+              legend: { labels: false},
+            },
+            maintainAspectRatio: false, // Adjust size
+          },
+        });
+
+        // 3. Line Chart - Monthly Trend
+        new Chart(document.getElementById("monthlyTrendChart"), {
+          type: "line",
+          data: {
+            labels: chartData.monthlyTrend.labels,
+            datasets: [
+              {
+                label: "Monthly Sales ($)",
+                data: chartData.monthlyTrend.data,
+                borderColor: "#90EE90", // Lighter green color for the line
+                backgroundColor: "rgba(144, 238, 144, 0.2)", // Lighter green for the fill
+                tension: 0.4,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              title: { display: true, text: "Monthly Sales Trend 2022", font: { size: 24, weight: "bold" }, color: "#ffffff" },
+              legend: { labels: { color: "#ffffff" } },
+            },
+            scales: {
+              y: { title: { display: true, text: "Sales ($)", color: "#ffffff" }, ticks: { color: "#ffffff" } },
+              x: { ticks: { color: "#ffffff" } },
+            },
+          },
+        });
+
+        // 4. Vertical Bar Chart - Country Sales
+        new Chart(document.getElementById("countrySalesChart"), {
+          type: "bar",
+          data: {
+            labels: chartData.countrySales.labels,
+            datasets: [
+              {
+                label: "Sales ($)",
+                data: chartData.countrySales.data,
+                backgroundColor: Array.from(
+                  { length: chartData.countrySales.labels.length },
+                  () => `hsl(${Math.random() * 360}, 70%, 60%)`
+                ),
+              },
+            ],
+          },
+          options: {
+            plugins: {
+              title: { display: true, text: "Sales by Country", font: { size: 24, weight: "bold" }, color: "#ffffff" },
+              legend: { labels: { color: "#ffffff" } },
+            },
+            scales: {
+              y: { title: { display: true, text: "Sales ($)", color: "#ffffff" }, ticks: { color: "#ffffff" } },
+              x: { ticks: { color: "#ffffff" } },
+            },
+          },
+        });
+      }
+
+      // Start loading data when page loads
+      window.addEventListener("DOMContentLoaded", loadData);
+    </script>
+  </body>
+</html>
