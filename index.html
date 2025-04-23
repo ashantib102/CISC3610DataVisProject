@@ -55,9 +55,12 @@
     <h1>Chocolate Sales Analysis</h1>
     <h2>Ashanti Benons</h2>
     <p>
-        This dashboard visualizes chocolate sales data from various countries and products. The data is sourced from a CSV file named <code>chocolate_sales.csv</code>. The charts include:
+        This project is meant to explore the Chart.js library. The dashboard visualizes chocolate sales data from various countries and products. The data is sourced from a CSV file named <code>chocolate_sales.csv</code>. 
+        The charts are not an accurate representation of the data but are designed to demonstrate the capabilities of Chart.js. 
+
+        The charts include:
          <ul>
-            <li><strong>Top 10 Products by Sales:</strong> A horizontal bar chart showing the top 10 products based on total sales.</li>
+            <li><strong>Top 10 Products by Sales:</strong> A horizontal bar chart showing the top 10 products based on the total revenue they generated across all countries and salespeople in the dataset.</li>
             <li><strong>Sales Distribution by Product:</strong> A doughnut chart illustrating the percentage distribution of sales across all products.</li>
             <li><strong>Monthly Sales Trend 2022:</strong> A line chart displaying the sales trend over the months of 2022.</li>
             <li><strong>Sales by Country:</strong> A vertical bar chart comparing total sales across different countries.</li>
@@ -107,7 +110,7 @@
               product: product?.trim(),
               country: country?.trim(),
               date: new Date(date?.trim()),
-              amount: parseFloat(amount?.replace(/[^0-9.]/g, "") || 0),
+              amount: parseFloat(amount?.replace(/[^0-9.]/g, "") || 0), // Remove non-numeric characters
               boxes: parseInt(boxes?.trim()) || 0,
             };
           })
@@ -140,9 +143,10 @@
             labels: Object.keys(aggregator.products)
               .sort((a, b) => aggregator.products[b] - aggregator.products[a])
               .slice(0, 10),
-            data: Object.values(aggregator.products)
-              .sort((a, b) => b - a)
-              .slice(0, 10),
+            data: Object.keys(aggregator.products)
+              .sort((a, b) => aggregator.products[b] - aggregator.products[a])
+              .slice(0, 10)
+              .map((key) => aggregator.products[key]),
           },
 
           productDistribution: {
@@ -281,3 +285,4 @@
     </script>
   </body>
 </html>
+``` 
